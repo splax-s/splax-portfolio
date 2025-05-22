@@ -1,304 +1,430 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Terminal as XTerm } from '@xterm/xterm';
 import { useOsStore } from '@/store/useOsStore';
 import { useTerminalStore } from '@/store/useTerminalStore';
-
-import '@xterm/xterm/css/xterm.css';
+import { commands } from '@/lib/terminal/commands';
+import MatrixRain from './MatrixRain';
 
 const Terminal: React.FC = () => {
   const terminalRef = useRef<HTMLDivElement>(null);
-  const xtermRef = useRef<XTerm | null>(null);
-  const [prompt, setPrompt] = useState('> ');
   const [currentInput, setCurrentInput] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
-  const [initialized, setInitialized] = useState(false);
-  const mounted = useRef(true);
+  const [focused, setFocused] = useState(false);
+  const [fontSize, setFontSize] = useState(14); // Dynamic font size
+  const [opacity, setOpacity] = useState(1); // For fade effects
+  const [theme, setTheme] = useState<'dark' | 'matrix' | 'retro' | 'synthwave'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('terminal-theme');
+      return (savedTheme as 'dark' | 'matrix' | 'retro' | 'synthwave') || 'dark';
+    }
+    return 'dark';
+  });
+  const [isTyping, setIsTyping] = useState(false);
+  const [autoCompleteHint, setAutoCompleteHint] = useState('');
   
-  const { executeCommand, clearTerminal, navigateHistory } = useTerminalStore();
+  const { executeCommand, clearTerminal, navigateHistory, history } = useTerminalStore();
   const { osType } = useOsStore();
   
+  // Get prompt based on OS type
+  const getPrompt = () => {
+    const user = 'splax';
+    const machine = osType.toLowerCase();
+    const path = '~';
+    return osType === 'windows' 
+      ? 'C:\\>' 
+      : `${user}@${machine} ${path} $`;
+  };
+
+  // Dynamic font size based on terminal width
   useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      if (xtermRef.current) {
-        try {
-          xtermRef.current.dispose();
-        } catch (e) {
-          console.error('Error disposing terminal:', e);
-        }
+    const handleResize = () => {
+      if (terminalRef.current) {
+        const width = terminalRef.current.offsetWidth;
+        const newSize = Math.max(12, Math.min(16, width / 50));
+        setFontSize(newSize);
       }
     };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Theme cycling with Cmd/Ctrl + T
+  useEffect(() => {
+    const handleThemeChange = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
+        e.preventDefault();
+        setTheme(current => {
+          switch (current) {
+            case 'dark': return 'matrix';
+            case 'matrix': return 'retro';
+            case 'retro': return 'synthwave';
+            default: return 'dark';
+          }
+        });
+        // Add fade effect
+        setOpacity(0);
+        setTimeout(() => setOpacity(1), 150);
+      }
+    };
+
+    window.addEventListener('keydown', handleThemeChange);
+    return () => window.removeEventListener('keydown', handleThemeChange);
+  }, []);
+
+  // Auto-completion hint system
+  useEffect(() => {
+    if (currentInput.trim()) {
+      const [command] = currentInput.trim().split(/\s+/);
+      const matchingCommands = Object.keys(commands).filter(
+        cmd => cmd.startsWith(command.toLowerCase())
+      );
+      
+      if (matchingCommands.length === 1 && matchingCommands[0] !== command) {
+        setAutoCompleteHint(matchingCommands[0].slice(command.length));
+      } else {
+        setAutoCompleteHint('');
+      }
+    } else {
+      setAutoCompleteHint('');
+    }
+  }, [currentInput]);
+
+  // Focus management
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (terminalRef.current?.contains(e.target as Node)) {
+        setFocused(true);
+      } else {
+        setFocused(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
   }, []);
   
-  // Initialize xterm.js
+  // Scroll to bottom after command execution
   useEffect(() => {
-    if (!terminalRef.current || initialized || !mounted.current) return;
-    
-    const initTerminal = async () => {
-      let term: XTerm | null = null;
-      let fitAddon: any = null;
-
-      try {
-        // Load FitAddon dynamically
-        const { FitAddon } = await import('@xterm/addon-fit');
-        
-        if (!mounted.current) return;
-        
-        fitAddon = new FitAddon();
-        term = new XTerm({
-          cursorBlink: true,
-          fontFamily: osType === 'mac' || osType === 'ios'
-            ? 'Menlo, Monaco, Courier New, monospace'
-            : 'Consolas, Courier New, monospace',
-          theme: {
-            background: osType === 'mac' || osType === 'ios'
-              ? '#1e1e1e'
-              : osType === 'windows'
-                ? '#0c0c0c'
-                : '#121212',
-            foreground: '#f0f0f0',
-            cursor: '#f0f0f0',
-          },
-          convertEol: true,
-          rows: 24,
-          cols: 80,
+    if (terminalRef.current) {
+      const scrollToBottom = () => {
+        terminalRef.current?.scrollTo({
+          top: terminalRef.current.scrollHeight,
+          behavior: 'smooth'
         });
-        
-        term.loadAddon(fitAddon);
-        
-        if (!terminalRef.current || !mounted.current) {
-          term.dispose();
+      };
+      
+      scrollToBottom();
+      // Also scroll after any potential delayed output
+      const timer = setTimeout(scrollToBottom, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [history, currentInput]);
+
+  // Save theme to localStorage
+  useEffect(() => {
+    localStorage.setItem('terminal-theme', theme);
+  }, [theme]);
+
+  // Keyboard input handling
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!focused) return;
+    
+    // Handle Cmd/Ctrl + Key combinations
+    if (e.metaKey || e.ctrlKey) {
+      switch (e.key.toLowerCase()) {
+        case 'l': // Clear screen
+          e.preventDefault();
+          clearTerminal();
           return;
-        }
-
-        term.open(terminalRef.current);
-
-        // Wait a frame for the terminal to be properly mounted
-        await new Promise(resolve => requestAnimationFrame(resolve));
-        
-        if (!mounted.current) {
-          term.dispose();
+        case 'k': // Clear current line
+          e.preventDefault();
+          setCurrentInput('');
+          setCursorPosition(0);
           return;
-        }
-
-        try {
-          fitAddon.fit();
-          xtermRef.current = term;
-          
-          const handleResize = () => {
-            if (!term) return;
-            try {
-              fitAddon.fit();
-            } catch (e) {
-              console.error('Failed to fit terminal on resize:', e);
-            }
-          };
-          
-          window.addEventListener('resize', handleResize);
-          
-          const welcomeMessage = getWelcomeMessage(osType);
-          term.writeln(welcomeMessage);
-          term.writeln('');
-          term.write(prompt);
-          
-          term.onKey(({ key, domEvent }) => {
-            const ev = domEvent;
-            const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
-            
-            if (!term) return;
-            
-            if (ev.keyCode === 13) { // Enter
-              processCommand(currentInput);
-              setCurrentInput('');
-              setCursorPosition(0);
-            } else if (ev.keyCode === 8) { // Backspace
-              if (currentInput.length > 0 && cursorPosition > 0) {
-                term.write('\b \b');
-                const newInput = 
-                  currentInput.substring(0, cursorPosition - 1) + 
-                  currentInput.substring(cursorPosition);
-                if (term.buffer.active.cursorX) {
-                  term.write(newInput.substring(cursorPosition - 1) + ' ');
-                  term.write('\x1b[' + (newInput.length - cursorPosition + 2) + 'D');
-                }
-                setCurrentInput(newInput);
-                setCursorPosition(cursorPosition - 1);
-              }
-            } else if (ev.keyCode === 37) { // Left arrow
-              if (cursorPosition > 0) {
-                term.write('\x1b[D');
-                setCursorPosition(cursorPosition - 1);
-              }
-            } else if (ev.keyCode === 39) { // Right arrow
-              if (cursorPosition < currentInput.length) {
-                term.write('\x1b[C');
-                setCursorPosition(cursorPosition + 1);
-              }
-            } else if (ev.keyCode === 38) { // Up arrow
-              const prevCommand = navigateHistory('up');
-              term.write('\x1b[2K\r');
-              term.write(prompt);
-              term.write(prevCommand);
-              setCurrentInput(prevCommand);
-              setCursorPosition(prevCommand.length);
-            } else if (ev.keyCode === 40) { // Down arrow
-              const nextCommand = navigateHistory('down');
-              term.write('\x1b[2K\r');
-              term.write(prompt);
-              term.write(nextCommand);
-              setCurrentInput(nextCommand);
-              setCursorPosition(nextCommand.length);
-            } else if (printable) {
-              if (cursorPosition < currentInput.length) {
-                // Insert at cursor position
-                const newInput = 
-                  currentInput.substring(0, cursorPosition) + 
-                  key +
-                  currentInput.substring(cursorPosition);
-                term.write(key);
-                term.write(currentInput.substring(cursorPosition));
-                term.write('\x1b[' + (currentInput.length - cursorPosition) + 'D');
-                setCurrentInput(newInput);
-                setCursorPosition(cursorPosition + 1);
-              } else {
-                // Append to the end
-                term.write(key);
-                setCurrentInput(currentInput + key);
-                setCursorPosition(cursorPosition + 1);
-              }
+        case 'u': // Clear to start of line
+          e.preventDefault();
+          setCurrentInput(prev => prev.slice(cursorPosition));
+          setCursorPosition(0);
+          return;
+        case 'w': // Delete word backwards
+          e.preventDefault();
+          const lastSpaceIndex = currentInput.slice(0, cursorPosition).lastIndexOf(' ');
+          setCurrentInput(prev => 
+            prev.slice(0, lastSpaceIndex + 1) + prev.slice(cursorPosition)
+          );
+          setCursorPosition(lastSpaceIndex + 1);
+          return;
+        case 'a': // Move to start of line
+          e.preventDefault();
+          setCursorPosition(0);
+          return;
+        case 'e': // Move to end of line
+          e.preventDefault();
+          setCursorPosition(currentInput.length);
+          return;
+        case 'l': // Change theme
+          e.preventDefault();
+          setTheme(current => {
+            switch (current) {
+              case 'dark': return 'matrix';
+              case 'matrix': return 'retro';
+              case 'retro': return 'synthwave';
+              default: return 'dark';
             }
           });
-          
-          setInitialized(true);
-        } catch (e) {
-          console.error('Failed to initialize terminal:', e);
-          if (mounted.current) {
-            const event = new Event('terminalError');
-            window.dispatchEvent(event);
+          setOpacity(0);
+          setTimeout(() => setOpacity(1), 150);
+          return;
+        case 'c': // Copy selected text or signal interrupt
+          if (window.getSelection()?.toString()) {
+            return; // Let browser handle copy
           }
-        }
-      } catch (error) {
-        console.error('Error initializing terminal:', error);
-        if (mounted.current) {
-          const event = new Event('terminalError');
-          window.dispatchEvent(event);
-        }
-        if (term) {
-          try {
-            term.dispose();
-          } catch (e) {
-            console.error('Error disposing terminal:', e);
-          }
-        }
+          e.preventDefault();
+          setCurrentInput('');
+          setCursorPosition(0);
+          executeCommand('^C');
+          return;
+        case 'v': // Paste text
+          return; // Let browser handle paste
       }
-    };
-    
-    initTerminal();
-  }, [osType, initialized]);
-  
-  // Auto focus terminal when it's rendered
-  useEffect(() => {
-    if (xtermRef.current) {
-      xtermRef.current.focus();
+      return;
     }
-  }, [initialized]);
-  
-  // Process user command
-  const processCommand = (input: string) => {
-    if (!xtermRef.current) return;
-    
-    const term = xtermRef.current;
-    
-    // Add newline
-    term.writeln('');
-    
-    if (input.trim().toLowerCase() === 'clear') {
-      // Handle clear command
-      clearTerminal();
-      term.clear();
-    } else {
-      // Execute command and get output
-      executeCommand(input);
-      
-      // Get the output from the store
-      const { history } = useTerminalStore.getState();
-      const lastCommand = history[history.length - 1];
-      
-      if (lastCommand && lastCommand.input === input) {
-        // Write command output with typewriter effect
-        const output = lastCommand.output;
-        typeOutput(term, output);
-      }
-    }
-    
-    // Write new prompt
-    term.writeln('');
-    term.write(prompt);
-  };
-  
-  // Function to type output with a slight delay for effect
-  const typeOutput = (term: XTerm, output: string) => {
-    const lines = output.split('\n');
-    
-    lines.forEach((line, index) => {
-      setTimeout(() => {
-        term.writeln(line);
-      }, index * 15); // 15ms delay between lines
-    });
-  };
-  
-  // Get welcome message based on OS
-  const getWelcomeMessage = (osType: string): string => {
-    switch (osType) {
-      case 'mac':
-        return `
-╭───────────────────────────────────────────╮
-│                                           │
-│    Welcome to Terminal                    │
-│                                           │
-│    Type 'help' to see available commands  │
-│                                           │
-╰───────────────────────────────────────────╯
-`;
-      case 'windows':
-        return `
-Microsoft Windows [Version 10.0.19044.1826]
-(c) Microsoft Corporation. All rights reserved.
 
-Type 'help' to see available commands.
-`;
-      case 'ios':
-      case 'android':
-        return `
-┌──────────────────────────────────────┐
-│                                      │
-│  Mobile Terminal                     │
-│                                      │
-│  Type 'help' to see available        │
-│  commands                            │
-│                                      │
-└──────────────────────────────────────┘
-`;
+    // Handle Alt/Option + Key combinations
+    if (e.altKey) {
+      switch (e.key) {
+        case 'b': // Move back one word
+          e.preventDefault();
+          const prevSpaceIndex = currentInput.slice(0, cursorPosition).lastIndexOf(' ');
+          setCursorPosition(prevSpaceIndex === -1 ? 0 : prevSpaceIndex);
+          return;
+        case 'f': // Move forward one word
+          e.preventDefault();
+          const nextSpaceIndex = currentInput.indexOf(' ', cursorPosition);
+          setCursorPosition(nextSpaceIndex === -1 ? currentInput.length : nextSpaceIndex + 1);
+          return;
+        case 'Backspace': // Delete word backwards
+          e.preventDefault();
+          const lastWordIndex = currentInput.slice(0, cursorPosition).lastIndexOf(' ');
+          setCurrentInput(prev => 
+            prev.slice(0, lastWordIndex + 1) + prev.slice(cursorPosition)
+          );
+          setCursorPosition(lastWordIndex + 1);
+          return;
+      }
+    }
+
+    e.preventDefault();
+    
+    switch (e.key) {
+      case 'Enter':
+        if (currentInput.trim()) {
+          executeCommand(currentInput);
+          setCurrentInput('');
+          setCursorPosition(0);
+        }
+        break;
+        
+      case 'Tab':
+        e.preventDefault();
+        if (autoCompleteHint) {
+          setCurrentInput(prev => prev + autoCompleteHint);
+          setCursorPosition(prev => prev + autoCompleteHint.length);
+        }
+        break;
+        
+      case 'Backspace':
+        if (cursorPosition > 0) {
+          setCurrentInput(prev => 
+            prev.slice(0, cursorPosition - 1) + prev.slice(cursorPosition)
+          );
+          setCursorPosition(prev => prev - 1);
+        }
+        break;
+        
+      case 'Delete':
+        if (cursorPosition < currentInput.length) {
+          setCurrentInput(prev =>
+            prev.slice(0, cursorPosition) + prev.slice(cursorPosition + 1)
+          );
+        }
+        break;
+        
+      case 'Home':
+        setCursorPosition(0);
+        break;
+        
+      case 'End':
+        setCursorPosition(currentInput.length);
+        break;
+
+      case 'ArrowLeft':
+        if (cursorPosition > 0) {
+          setCursorPosition(prev => prev - 1);
+        }
+        break;
+        
+      case 'ArrowRight':
+        if (cursorPosition < currentInput.length) {
+          setCursorPosition(prev => prev + 1);
+        }
+        break;
+        
+      case 'ArrowUp':
+        {
+          const prevCommand = navigateHistory('up');
+          setCurrentInput(prevCommand);
+          setCursorPosition(prevCommand.length);
+        }
+        break;
+        
+      case 'ArrowDown':
+        {
+          const nextCommand = navigateHistory('down');
+          setCurrentInput(nextCommand);
+          setCursorPosition(nextCommand.length);
+        }
+        break;
+        
       default:
-        return `Welcome to Terminal. Type 'help' to see available commands.`;
+        // Only handle printable characters
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          setCurrentInput(prev => 
+            prev.slice(0, cursorPosition) + e.key + prev.slice(cursorPosition)
+          );
+          setCursorPosition(prev => prev + 1);
+        }
     }
   };
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focused, currentInput, cursorPosition, executeCommand, navigateHistory, autoCompleteHint]);
+
+  // Handle command output typing effect
+  useEffect(() => {
+    if (history.length > 0) {
+      const lastEntry = history[history.length - 1];
+      setIsTyping(true);
+      const timeout = setTimeout(() => {
+        setIsTyping(false);
+      }, Math.min(lastEntry.output.length * 10, 1000)); // Cap at 1 second
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [history]);
   
-  // If there's an issue with xterm, fall back to the simple terminal
-  if (!initialized) {
-    return (
-      <div className="w-full h-full bg-black flex items-center justify-center text-white">
-        <p>Loading terminal...</p>
-      </div>
-    );
-  }
+  const getThemeStyles = () => {
+    switch (theme) {
+      case 'matrix':
+        return {
+          background: 'bg-black',
+          text: 'text-green-400',
+          prompt: 'text-green-600',
+          output: 'text-green-300/70',
+          cursor: 'bg-green-500/50',
+          shadow: 'shadow-lg shadow-green-900/20',
+        };
+      case 'retro':
+        return {
+          background: 'bg-amber-950',
+          text: 'text-amber-200',
+          prompt: 'text-amber-400',
+          output: 'text-amber-200/70',
+          cursor: 'bg-amber-400/50',
+          shadow: 'shadow-lg shadow-amber-900/20',
+        };
+      case 'synthwave':
+        return {
+          background: 'bg-gray-900',
+          text: 'text-pink-400',
+          prompt: 'text-blue-500',
+          output: 'text-violet-300',
+          cursor: 'bg-pink-500/50',
+          shadow: 'shadow-lg shadow-purple-900/20',
+        };
+      default:
+        return {
+          background: 'bg-gray-900',
+          text: 'text-gray-100',
+          prompt: 'text-blue-400',
+          output: 'text-gray-300/70',
+          cursor: 'bg-white/50',
+          shadow: 'shadow-lg shadow-black/20',
+        };
+    };
+  };
+
+  const styles = getThemeStyles();
   
   return (
-    <div className="w-full h-full bg-black">
-      <div ref={terminalRef} className="w-full h-full" />
+    <div 
+      ref={terminalRef}
+      className={`w-full h-full ${styles.background} font-mono overflow-auto transition-all duration-300
+                  ${focused ? 'ring-1 ring-white/20' : ''} ${styles.shadow}`}
+      style={{ 
+        fontSize: `${fontSize}px`,
+        opacity,
+        transition: 'background-color 0.3s, opacity 0.15s'
+      }}
+      tabIndex={0}
+      onClick={() => setFocused(true)}
+    >
+      <div className="p-4 min-h-full">
+        {/* Matrix effect */}
+        {theme === 'matrix' && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
+            <MatrixRain />
+          </div>
+        )}
+
+        {/* Welcome Message */}
+        <div className={`mb-4 ${styles.text} font-bold`}>
+          {osType === 'mac' ? '📍' : '>'} Welcome to Splax's Interactive Terminal
+          <div className={`mt-1 ${styles.output} font-normal text-sm`}>
+            Type 'help' for commands • Cmd/Ctrl+T to change theme • Cmd/Ctrl+L to clear
+          </div>
+        </div>
+        
+        {/* Command History */}
+        <div className="space-y-2">
+          {history.map((entry, i) => (
+            <div key={i} className="group">
+              <div className="flex items-center">
+                <span className={styles.prompt}>{getPrompt()}</span>
+                <span className={`ml-2 ${styles.text}`}>{entry.input}</span>
+              </div>
+              <div className={`whitespace-pre-wrap pl-4 ${styles.output} group-hover:opacity-100 transition-opacity 
+                            ${entry.type === 'error' ? 'text-red-400' : ''}`}>
+                {entry.output}
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Current Input Line */}
+        <div className="flex items-center mt-2">
+          <span className={styles.prompt}>{getPrompt()}</span>
+          <div className="relative ml-2 flex-1">
+            <span className={styles.text}>
+              {currentInput}
+              {autoCompleteHint && (
+                <span className="opacity-30">{autoCompleteHint}</span>
+              )}
+            </span>
+            <span 
+              className={`absolute top-0 -left-[0.1em] w-[0.6em] h-full transition-all
+                        ${styles.cursor} ${focused ? 'opacity-100' : 'opacity-0'}
+                        ${isTyping ? 'animate-pulse' : ''}`}
+              style={{ transform: `translateX(${cursorPosition}ch)` }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

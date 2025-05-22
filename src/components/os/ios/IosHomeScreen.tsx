@@ -17,12 +17,12 @@ const IosHomeScreen: React.FC = () => {
     <div className="relative w-full h-full bg-cover bg-center"
          style={{ backgroundImage: 'url(/backgrounds/new-ios-background.svg)' }}>
       {/* Dynamic Island */}
-      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[120px] h-[35px] bg-black rounded-b-3xl z-50">
+      {/* <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[120px] h-[35px] bg-black rounded-b-3xl z-50">
         <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-16 h-2 bg-gray-800 rounded-full"></div>
-      </div>
+      </div> */}
 
       {/* Status Bar */}
-      <div className="absolute top-1 left-0 right-0 px-6 flex justify-between items-center text-white text-sm z-40">
+      {/* <div className="absolute top-1 left-0 right-0 px-6 flex justify-between items-center text-white text-sm z-40">
         <div>{currentTime}</div>
         <div className="flex items-center space-x-2">
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -32,7 +32,7 @@ const IosHomeScreen: React.FC = () => {
             <path d="M19,17H5V7H19M19,5H5A2,2 0 0,0 3,7V17A2,2 0 0,0 5,19H19A2,2 0 0,0 21,17V7A2,2 0 0,0 19,5M16.5,10A1.5,1.5 0 0,0 15,8.5A1.5,1.5 0 0,0 13.5,10A1.5,1.5 0 0,0 15,11.5A1.5,1.5 0 0,0 16.5,10M12,14L10.5,12L8,15H19L15,10L12,14Z" />
           </svg>
         </div>
-      </div>
+      </div> */}
 
       {/* App Grid */}
       <div className="w-full h-full pt-16 px-6 grid grid-cols-4 gap-8">
@@ -67,18 +67,25 @@ const IosHomeScreen: React.FC = () => {
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-3xl bg-white/20 backdrop-blur-md">
         <div className="flex space-x-6">
           {[
-            { name: 'Phone', icon: '📞' },
-            { name: 'Messages', icon: '💬' },
-            { name: 'Safari', icon: '🌐' },
-            { name: 'Mail', icon: '✉️' },
+            { name: 'About', icon: '/icons/about.svg', id: 'about' },
+            { name: 'Projects', icon: '/icons/projects.svg', id: 'projects' },
+            { name: 'Terminal', icon: '/icons/terminal.svg', id: 'terminal' },
+            { name: 'Contact', icon: '/icons/contact.svg', id: 'contact' },
           ].map((app) => (
             <motion.button
-              key={app.name}
-              className="w-12 h-12 flex items-center justify-center text-2xl"
+              key={app.id}
+              onClick={() => toggleApp(app.id)}
+              className="w-12 h-12 flex items-center justify-center bg-white/20 backdrop-blur-lg rounded-2xl"
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
             >
-              {app.icon}
+              <Image
+                src={app.icon}
+                alt={app.name}
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
             </motion.button>
           ))}
         </div>

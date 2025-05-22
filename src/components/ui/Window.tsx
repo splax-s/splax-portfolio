@@ -19,9 +19,83 @@ const Window: React.FC<WindowProps> = ({
   initialPosition = { x: 400, y: 400 },
   initialSize = { width: 600, height: 400 },
 }) => {
+  // Declare all hooks first
   const windowRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [localSize, setLocalSize] = useState(initialSize);
+  const [resizeDirection, setResizeDirection] = useState<string | null>(null);
+  const [startResizePosition, setStartResizePosition] = useState({ x: 0, y: 0 });
+  const [startResizeSize, setStartResizeSize] = useState(initialSize);
+  
+  const handleClose = () => {
+    // Just trigger the closing animation
+    setIsClosing(true);
+  };
+  
+  const handleResizeStart = (direction: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    setResizeDirection(direction);
+    setStartResizePosition({ x: e.clientX, y: e.clientY });
+    
+    // Ensure we start with numeric values
+    const currentWidth = typeof window?.size?.width === 'number' ? window.size.width : initialSize.width;
+    const currentHeight = typeof window?.size?.height === 'number' ? window.size.height : initialSize.height;
+    
+    setStartResizeSize({ width: currentWidth, height: currentHeight });
+    setLocalSize({ width: currentWidth, height: currentHeight });
+  };
+  
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!isResizing || !resizeDirection) return;
+
+    const deltaX = e.clientX - startResizePosition.x;
+    const deltaY = e.clientY - startResizePosition.y;
+    
+    let newWidth = startResizeSize.width;
+    let newHeight = startResizeSize.height;
+    
+    // Update size based on resize direction
+    if (resizeDirection.includes('e')) {
+      newWidth = Math.max(200, startResizeSize.width + deltaX);
+    }
+    if (resizeDirection.includes('s')) {
+      newHeight = Math.max(200, startResizeSize.height + deltaY);
+    }
+    if (resizeDirection.includes('w')) {
+      const widthDelta = -deltaX;
+      newWidth = Math.max(200, startResizeSize.width + widthDelta);
+      if (window?.position) {
+        moveWindow(id, { 
+          x: window.position.x - widthDelta, 
+          y: window.position.y 
+        });
+      }
+    }
+    if (resizeDirection.includes('n')) {
+      const heightDelta = -deltaY;
+      newHeight = Math.max(200, startResizeSize.height + heightDelta);
+      if (window?.position) {
+        moveWindow(id, { 
+          x: window.position.x, 
+          y: window.position.y - heightDelta 
+        });
+      }
+    }
+    
+    setLocalSize({ width: newWidth, height: newHeight });
+  };
+  
+  const handleResizeEnd = () => {
+    if (isResizing) {
+      setIsResizing(false);
+      setResizeDirection(null);
+      // Update the global store with the final size
+      resizeWindow(id, localSize);
+    }
+  };
   
   const {
     osType,
@@ -37,19 +111,39 @@ const Window: React.FC<WindowProps> = ({
   
   const window = windows.find(w => w.id === id);
   
-  // Early return using null - move it after all hooks
-  const [isClosing, setIsClosing] = useState(false);
+  // Get properties safely with defaults
+  const isFocused = window?.isFocused ?? false;
+  const isMaximized = window?.isMaximized ?? false;
+  const zIndex = window?.zIndex ?? 0;
 
   useEffect(() => {
     if (window && !window.isOpen && !isClosing) {
       setIsClosing(true);
     }
-  }, [window?.isOpen]);
+  }, [window?.isOpen, isClosing]);
+
+  useEffect(() => {
+    if (isFocused && windowRef.current) {
+      windowRef.current.focus();
+    }
+  }, [isFocused]);
+
+  useEffect(() => {
+    if (isResizing && typeof globalThis.window !== 'undefined') {
+      globalThis.window.addEventListener('mousemove', handleResizeMove);
+      globalThis.window.addEventListener('mouseup', handleResizeEnd);
+    }
+    return () => {
+      if (typeof globalThis.window !== 'undefined') {
+        globalThis.window.removeEventListener('mousemove', handleResizeMove);
+        globalThis.window.removeEventListener('mouseup', handleResizeEnd);
+      }
+    };
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
   
+  // Return only after all hooks are called
   if (!window || (!window.isOpen && !isClosing)) return null;
-  
-  const { isFocused, isMaximized, zIndex } = window;
-  
+
   // Calculate position in the center of the screen for new windows
   const getInitialPosition = () => {
     // Ensure we have access to window object and it's properly defined
@@ -82,9 +176,12 @@ const Window: React.FC<WindowProps> = ({
         }
       : getInitialPosition();
     
-  const size = window.isMaximized
+  const windowSize = window.isMaximized
     ? { width: '100%', height: '100%' }
-    : window.size || initialSize;
+    : window.size || localSize;
+
+  // Use local state during resize to avoid animation lag
+  const displaySize = isResizing ? localSize : windowSize;
   
   const isMobile = osType === 'ios' || osType === 'android';
   
@@ -94,6 +191,17 @@ const Window: React.FC<WindowProps> = ({
     }
   }, [isFocused]);
   
+  // Watch for isClosing changes
+  useEffect(() => {
+    if (isClosing) {
+      // Wait for animation to complete
+      const timer = setTimeout(() => {
+        closeApp(id);
+      }, 200); // Match this with your animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [isClosing, closeApp, id]);
+
   // Handle window controls based on OS type
   const renderWindowControls = () => {
     switch (osType) {
@@ -101,7 +209,7 @@ const Window: React.FC<WindowProps> = ({
         return (
           <div className="flex space-x-2">
             <button
-              onClick={() => closeApp(id)}
+              onClick={handleClose}
               className="w-3 h-3 bg-red-500 rounded-full hover:bg-red-600"
               aria-label="Close"
             />
@@ -136,7 +244,7 @@ const Window: React.FC<WindowProps> = ({
               □
             </button>
             <button
-              onClick={() => closeApp(id)}
+              onClick={handleClose}
               className="px-3 py-1 hover:bg-red-500 hover:text-white"
               aria-label="Close"
             >
@@ -148,7 +256,7 @@ const Window: React.FC<WindowProps> = ({
       default:
         return (
           <button
-            onClick={() => closeApp(id)}
+            onClick={handleClose}
             className="p-2"
             aria-label="Close"
           >
@@ -207,7 +315,7 @@ const Window: React.FC<WindowProps> = ({
             <h2 className="font-medium">{title}</h2>
           </div>
           <motion.button
-            onClick={() => closeApp(id)}
+            onClick={handleClose}
             className={iosStyles.closeBtn}
             aria-label="Close"
             whileTap={{ scale: 0.95 }}
@@ -248,7 +356,7 @@ const Window: React.FC<WindowProps> = ({
             transition={{ delay: 0.4, type: "spring" }}
           >
             <button
-              onClick={() => closeApp(id)}
+              onClick={handleClose}
               className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center"
               aria-label="Back"
             >
@@ -266,7 +374,7 @@ const Window: React.FC<WindowProps> = ({
   return (
     <motion.div
       ref={windowRef}
-      className={`fixed flex flex-col ${
+      className={`absolute flex flex-col ${
         osType === 'mac' 
           ? 'rounded-lg overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl' 
           : osType === 'windows'
@@ -282,16 +390,16 @@ const Window: React.FC<WindowProps> = ({
       animate={{ 
         scale: 1, 
         opacity: 1,
-        x: position.x,
-        y: position.y,
-        width: typeof size.width === 'number' ? size.width : undefined,
-        height: typeof size.height === 'number' ? size.height : undefined,
+        x: !isResizing ? position.x : undefined,
+        y: !isResizing ? position.y : undefined,
         boxShadow: isFocused ? "0px 10px 30px rgba(0, 0, 0, 0.2)" : "0px 4px 10px rgba(0, 0, 0, 0.1)"
       }}
       style={{
-        width: typeof size.width === 'string' ? size.width : undefined,
-        height: typeof size.height === 'string' ? size.height : undefined,
+        width: displaySize.width,
+        height: displaySize.height,
         zIndex,
+        top: isResizing ? position.y : 10,
+        left: isResizing ? position.x : undefined
       }}
       exit={{ scale: 0.9, opacity: 0 }}
       transition={{ 
@@ -359,7 +467,11 @@ const Window: React.FC<WindowProps> = ({
               e.preventDefault();
               setIsResizing(true);
               
-              const startSize = { ...size };
+              const startSize = {
+                width: typeof windowSize.width === 'number' ? windowSize.width : 600,
+                height: typeof windowSize.height === 'number' ? windowSize.height : 400
+              };
+              setLocalSize(startSize);
               const startPos = { x: e.clientX, y: e.clientY };
               
               const onMouseMove = (e: MouseEvent) => {
@@ -367,9 +479,13 @@ const Window: React.FC<WindowProps> = ({
                 
                 const deltaX = e.clientX - startPos.x;
                 
-                const newWidth = Math.max(300, (startSize as any).width + deltaX);
+                const newSize = {
+                  width: Math.max(300, startSize.width + deltaX),
+                  height: startSize.height
+                };
                 
-                resizeWindow(id, { width: newWidth, height: (startSize as any).height });
+                setLocalSize(newSize);
+                resizeWindow(id, newSize);
               };
               
               const onMouseUp = () => {
@@ -391,7 +507,11 @@ const Window: React.FC<WindowProps> = ({
               e.preventDefault();
               setIsResizing(true);
               
-              const startSize = { ...size };
+              const startSize = {
+                width: typeof windowSize.width === 'number' ? windowSize.width : 600,
+                height: typeof windowSize.height === 'number' ? windowSize.height : 400
+              };
+              setLocalSize(startSize);
               const startPos = { x: e.clientX, y: e.clientY };
               
               const onMouseMove = (e: MouseEvent) => {
@@ -399,9 +519,13 @@ const Window: React.FC<WindowProps> = ({
                 
                 const deltaY = e.clientY - startPos.y;
                 
-                const newHeight = Math.max(200, (startSize as any).height + deltaY);
+                const newSize = {
+                  width: startSize.width,
+                  height: Math.max(200, startSize.height + deltaY)
+                };
                 
-                resizeWindow(id, { width: (startSize as any).width, height: newHeight });
+                setLocalSize(newSize);
+                resizeWindow(id, newSize);
               };
               
               const onMouseUp = () => {
@@ -417,13 +541,18 @@ const Window: React.FC<WindowProps> = ({
           
           {/* Corner resize handle */}
           <div
-            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-center justify-center"
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-center justify-center hover:bg-blue-400/20"
             onMouseDown={(e) => {
               e.stopPropagation();
               e.preventDefault();
               setIsResizing(true);
               
-              const startSize = { ...size };
+              const startSize = {
+                width: typeof windowSize.width === 'number' ? windowSize.width : 600,
+                height: typeof windowSize.height === 'number' ? windowSize.height : 400
+              };
+              setLocalSize(startSize);
+              
               const startPos = { x: e.clientX, y: e.clientY };
               
               const onMouseMove = (e: MouseEvent) => {
@@ -432,10 +561,13 @@ const Window: React.FC<WindowProps> = ({
                 const deltaX = e.clientX - startPos.x;
                 const deltaY = e.clientY - startPos.y;
                 
-                const newWidth = Math.max(300, (startSize as any).width + deltaX);
-                const newHeight = Math.max(200, (startSize as any).height + deltaY);
+                const newSize = {
+                  width: Math.max(300, startSize.width + deltaX),
+                  height: Math.max(200, startSize.height + deltaY)
+                };
                 
-                resizeWindow(id, { width: newWidth, height: newHeight });
+                setLocalSize(newSize);
+                resizeWindow(id, newSize);
               };
               
               const onMouseUp = () => {

@@ -104,7 +104,7 @@ export const useOsStore = create<OsState>((set) => ({
       isMinimized: false,
       zIndex: 0,
       position: { x: 200, y: 200 },
-      size: { width: 500, height: 400 },
+      size: { width: 700, height: 700 },
       component: 'About',
     },
     {
@@ -117,7 +117,7 @@ export const useOsStore = create<OsState>((set) => ({
       isMinimized: false,
       zIndex: 0,
       position: { x: 250, y: 250 },
-      size: { width: 400, height: 350 },
+      size: { width: 600, height: 600 },
       component: 'Contact',
     },
   ],
@@ -141,14 +141,16 @@ export const useOsStore = create<OsState>((set) => ({
     };
   }),
   
-  closeApp: (appId) => set((state) => ({
-    windows: state.windows.map((window) => 
-      window.id === appId
-        ? { ...window, isOpen: false, isFocused: false, isMaximized: false, isMinimized: false }
-        : window
-    ),
-  })),
-  
+  closeApp: (appId) => set((state) => {
+    return {
+      windows: state.windows.map((window) => 
+        window.id === appId
+          ? { ...window, isOpen: false, isFocused: false, isMinimized: false, isMaximized: false }
+          : window
+      ),
+    };
+  }),
+
   focusApp: (appId) => set((state) => {
     const newMaxZIndex = state.maxZIndex + 1;
     return {

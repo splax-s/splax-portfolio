@@ -6,16 +6,22 @@ import dynamic from 'next/dynamic';
 import TerminalSimple from '@/components/apps/TerminalSimple';
 
 // Dynamically import the Terminal component with no SSR to avoid hydration issues
-const Terminal = dynamic(() => import('@/components/apps/Terminal'), {
+const Terminal = dynamic(() => import('@/components/apps/Terminal').catch(() => {
+  // If terminal fails to load, return a simple div that will trigger error boundary
+  return () => <div>Terminal load failed</div>;
+}), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-black flex items-center justify-center text-white">
-      <div className="flex flex-col items-center">
-        <p className="mb-2">Initializing terminal...</p>
-        <div className="flex space-x-2">
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+    <div className="w-full h-full bg-black p-4 font-mono">
+      <div className="flex flex-col space-y-2 text-white/90">
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 border-t-2 border-r-2 border-white/30 rounded-full animate-spin"></div>
+          <span>Initializing terminal environment...</span>
+        </div>
+        <div className="text-sm text-white/60">
+          <div>Loading components...</div>
+          <div className="ml-2 text-white/40">• xterm.js</div>
+          <div className="ml-2 text-white/40">• addons</div>
         </div>
       </div>
     </div>
@@ -26,37 +32,53 @@ export const DynamicTerminal: React.FC = () => {
   const mounted = useRef(true);
   const [useSimpleTerminal, setUseSimpleTerminal] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const { osType } = useOsStore();
 
   useEffect(() => {
     mounted.current = true;
     
-    // Check if we're running on a mobile device where xterm.js might not work well
-    if (osType === 'ios' || osType === 'android') {
-      setUseSimpleTerminal(true);
-    }
-
-    // If Terminal errors, we'll fall back to TerminalSimple
     const handleTerminalError = () => {
       if (mounted.current) {
-        console.log('Terminal error detected, falling back to simple terminal');
         setUseSimpleTerminal(true);
       }
     };
 
     window.addEventListener('terminalError', handleTerminalError);
     
-    // Set loaded after a small delay to ensure terminal has time to initialize
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
+    // Attempt to load xterm.js
+    const loadXterm = async () => {
+      try {
+        await import('@xterm/xterm');
+        if (mounted.current) {
+          setIsLoaded(true);
+        }
+      } catch (error) {
+        if (mounted.current) {
+          setLoadError(error as Error);
+          setUseSimpleTerminal(true);
+        }
+      }
+    };
 
+    loadXterm();
+    
     return () => {
       mounted.current = false;
       window.removeEventListener('terminalError', handleTerminalError);
-      clearTimeout(timer);
     };
-  }, [osType]);
+  }, []);
 
-  return useSimpleTerminal ? <TerminalSimple /> : <Terminal />;
+  useEffect(() => {
+    // If load failed, switch to simple terminal
+    if (loadError) {
+      setUseSimpleTerminal(true);
+    }
+  }, [loadError]);
+
+  if (useSimpleTerminal) {
+    return <TerminalSimple />;
+  }
+
+  return <Terminal key={`terminal-${osType}`} />;
 };

@@ -10,8 +10,7 @@ interface WindowContentProps {
 // Dynamic imports with loading states
 const components = {
   Terminal: dynamic(() => import('@/components/apps/Terminal'), {
-    loading: () => <div className="w-full h-full flex items-center justify-center">Loading Terminal...</div>,
-    ssr: false
+    loading: () => <div className="w-full h-full flex items-center justify-center">Loading Terminal...</div>
   }),
   About: dynamic(() => import('@/components/apps/About'), {
     loading: () => <div className="w-full h-full flex items-center justify-center">Loading About...</div>

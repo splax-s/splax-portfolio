@@ -1,12 +1,14 @@
 export interface TerminalCommand {
   command: string;
   description: string;
-  execute: () => string;
+  execute: (args?: string[]) => string;
 }
 
 export interface TerminalHistory {
   input: string;
   output: string;
+  timestamp: number;
+  type?: 'success' | 'error' | 'info' | 'command';
 }
 
 export interface TerminalState {
@@ -19,11 +21,14 @@ export interface Bio {
   name: string;
   title: string;
   description: string;
+  location: string;
+  status: string;
 }
 
 export interface Skill {
+  category: string;
   name: string;
-  category: 'Frontend' | 'Backend' | 'Network' | 'Cloud' | 'Other';
+  level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
 }
 
 export interface Project {
@@ -31,9 +36,17 @@ export interface Project {
   description: string;
   technologies: string[];
   githubUrl: string;
+  demo: string;
 }
 
 export interface Contact {
   email: string;
+  github: string;
   linkedin: string;
+  twitter: string;
+}
+
+export interface Fact {
+  category: string;
+  items: string[];
 }

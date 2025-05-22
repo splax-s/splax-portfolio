@@ -1,64 +1,83 @@
-import { Bio, Contact, Project, Skill } from '@/types/terminal';
+import { Bio, Skill, Project, Contact, Fact } from '@/types/terminal';
 
 export const bio: Bio = {
-  name: 'John Doe',
-  title: 'Full Stack Developer',
-  description: 'I\'m a passionate developer with expertise in building modern web applications. I specialize in React, Next.js, and TypeScript. I enjoy creating performant, beautiful, and accessible user interfaces.'
+  name: 'Splax',
+  title: 'Full Stack Developer & DevOps Engineer',
+  description: 'Passionate about creating intuitive and performant web applications. Experienced in modern web technologies and cloud infrastructure.',
+  location: 'Based in Germany',
+  status: 'Open to opportunities',
 };
 
+export const facts: Fact[] = [
+  {
+    category: 'coding',
+    items: [
+      'Started coding at the age of 16',
+      'Built my first website in 2015',
+      'Contributed to over 50 open source projects',
+      'Love experimenting with new technologies',
+    ],
+  },
+  {
+    category: 'interests',
+    items: [
+      'Avid mechanical keyboard enthusiast',
+      'Enjoy solving complex architectural challenges',
+      'Passionate about developer experience',
+      'Always learning new programming languages',
+    ],
+  },
+  {
+    category: 'achievements',
+    items: [
+      'Led development of enterprise-scale applications',
+      'Created popular open source tools',
+      'Speaker at tech conferences',
+      'Published technical articles and tutorials',
+    ],
+  },
+];
+
 export const skills: Skill[] = [
-  { name: 'React', category: 'Frontend' },
-  { name: 'Next.js', category: 'Frontend' },
-  { name: 'TypeScript', category: 'Frontend' },
-  { name: 'JavaScript', category: 'Frontend' },
-  { name: 'Tailwind CSS', category: 'Frontend' },
-  { name: 'Framer Motion', category: 'Frontend' },
-  { name: 'HTML/CSS', category: 'Frontend' },
-  
-  { name: 'Node.js', category: 'Backend' },
-  { name: 'Express', category: 'Backend' },
-  { name: 'MongoDB', category: 'Backend' },
-  { name: 'PostgreSQL', category: 'Backend' },
-  { name: 'GraphQL', category: 'Backend' },
-  
-  { name: 'AWS', category: 'Cloud' },
-  { name: 'Vercel', category: 'Cloud' },
-  { name: 'Docker', category: 'Cloud' },
-  { name: 'CI/CD', category: 'Cloud' },
-  
-  { name: 'HTTP/HTTPS', category: 'Network' },
-  { name: 'REST APIs', category: 'Network' },
-  { name: 'WebSockets', category: 'Network' },
+  { category: 'Frontend', name: 'React/Next.js', level: 'Expert' },
+  { category: 'Frontend', name: 'TypeScript', level: 'Expert' },
+  { category: 'Frontend', name: 'Tailwind CSS', level: 'Expert' },
+  { category: 'Backend', name: 'Node.js', level: 'Expert' },
+  { category: 'Backend', name: 'Python', level: 'Advanced' },
+  { category: 'Backend', name: 'PostgreSQL', level: 'Advanced' },
+  { category: 'Cloud', name: 'AWS', level: 'Advanced' },
+  { category: 'Cloud', name: 'Docker', level: 'Expert' },
+  { category: 'DevOps', name: 'CI/CD', level: 'Expert' },
 ];
 
 export const projects: Project[] = [
   {
-    name: 'E-Commerce Platform',
-    description: 'A full-stack e-commerce solution with advanced product filtering, cart functionality, and payment integration.',
-    technologies: ['Next.js', 'TypeScript', 'Tailwind CSS', 'Prisma', 'PostgreSQL'],
-    githubUrl: 'https://github.com/johndoe/ecommerce-platform'
+    name: 'Portfolio OS',
+    description: 'An operating system simulation built with React and TypeScript',
+    technologies: ['React', 'TypeScript', 'Tailwind CSS', 'Framer Motion'],
+    githubUrl: 'https://github.com/splax/portfolio',
+    demo: 'https://splax.dev',
   },
-  {
-    name: 'Task Management App',
-    description: 'A Kanban-style task management application with drag-and-drop functionality, real-time updates, and team collaboration features.',
-    technologies: ['React', 'Redux', 'Node.js', 'Socket.io', 'MongoDB'],
-    githubUrl: 'https://github.com/johndoe/task-management'
-  },
-  {
-    name: 'Personal Blog',
-    description: 'A statically generated blog with markdown support, code syntax highlighting, and search functionality.',
-    technologies: ['Next.js', 'MDX', 'Tailwind CSS', 'Vercel'],
-    githubUrl: 'https://github.com/johndoe/personal-blog'
-  },
-  {
-    name: 'Weather Dashboard',
-    description: 'An interactive weather dashboard that displays current conditions and forecasts for multiple locations with beautiful visualizations.',
-    technologies: ['React', 'D3.js', 'OpenWeather API', 'Geolocation API'],
-    githubUrl: 'https://github.com/johndoe/weather-dashboard'
-  }
+  // Add more projects here
+];
+
+export const funFacts: string[] = [
+  'I can type at 120 WPM',
+  'I use Neovim as my primary editor',
+  'I have contributed to the React core',
+  'I built my first computer at age 14',
+  'I love automating everything',
+];
+
+export const quotes: string[] = [
+  'The best code is no code at all',
+  'Make it work, make it right, make it fast',
+  'Simplicity is the ultimate sophistication',
 ];
 
 export const contact: Contact = {
-  email: 'john.doe@example.com',
-  linkedin: 'https://linkedin.com/in/johndoe'
+  email: 'contact@splax.dev',
+  github: 'github.com/splax',
+  linkedin: 'linkedin.com/in/splax',
+  twitter: '@splax',
 };
