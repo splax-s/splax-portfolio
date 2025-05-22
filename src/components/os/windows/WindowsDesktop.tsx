@@ -7,7 +7,7 @@ import { useOsStore } from '@/store/useOsStore';
 
 const WindowsTaskbar: React.FC = () => {
   const [isStartOpen, setIsStartOpen] = useState(false);
-  const { windows, openApp } = useOsStore();
+  const { windows, toggleApp } = useOsStore();
   const currentTime = new Date().toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -86,7 +86,7 @@ const WindowsStartMenu: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       transition={{ duration: 0.2 }}
     >
       <div className="p-4 border-b border-blue-800">
-        <h3 className="text-lg font-medium">Portfolio OS</h3>
+        <h3 className="text-lg font-medium">Splax OS</h3>
         <p className="text-sm opacity-80">Windows Edition</p>
       </div>
       

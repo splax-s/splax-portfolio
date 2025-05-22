@@ -89,7 +89,7 @@ const AndroidBootScreen: React.FC = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.8, duration: 0.8 }}
       >
-        <span>powered by Portfolio OS</span>
+        <span>powered by Splax OS</span>
       </motion.div>
     </motion.div>
   );

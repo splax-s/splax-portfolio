@@ -52,29 +52,34 @@ const Window: React.FC<WindowProps> = ({
   
   // Calculate position in the center of the screen for new windows
   const getInitialPosition = () => {
-    if (typeof window !== 'undefined') {
-      const viewportWidth = globalThis.window?.innerWidth || 1024;
-      const viewportHeight = globalThis.window?.innerHeight || 768;
-      
-      // Default size for the window
-      const defaultWidth = initialSize.width || 600;
-      const defaultHeight = initialSize.height || 400;
-      
-      // Center the window both horizontally and vertically
-      console.log(Math.max(0, (viewportWidth - defaultWidth) / 2))
-      return {
-        x: Math.max(0, (viewportWidth - defaultWidth) / 2),
-        y: Math.max(0, (viewportHeight - defaultHeight) / 2)
-      };
+    // Ensure we have access to window object and it's properly defined
+    if (typeof globalThis.window === 'undefined') {
+      return initialPosition;
     }
-    return initialPosition;
+
+    const viewportWidth = globalThis.window.innerWidth || 1024;
+    const viewportHeight = globalThis.window.innerHeight || 768;
+    
+    // Default size for the window
+    const defaultWidth = typeof initialSize.width === 'number' ? initialSize.width : 600;
+    const defaultHeight = typeof initialSize.height === 'number' ? initialSize.height : 400;
+    
+    // Center the window both horizontally and vertically
+    // Ensure the window is always at least partially visible
+    return {
+      x: Math.min(Math.max(0, (viewportWidth - defaultWidth) / 2), viewportWidth - 100),
+      y: Math.min(Math.max(0, (viewportHeight - defaultHeight) / 2), viewportHeight - 100)
+    };
   };
   
   // Use stored position or calculate a centered position
   const position = window.isMaximized 
     ? { x: 0, y: 0 } 
-    : window.position && (window.position.x !== 0 && window.position.y !== 0)
-      ? window.position
+    : window.position 
+      ? {
+          x: Math.min(Math.max(0, window.position.x), globalThis.window?.innerWidth - 100 || 0),
+          y: Math.min(Math.max(0, window.position.y), globalThis.window?.innerHeight - 100 || 0)
+        }
       : getInitialPosition();
     
   const size = window.isMaximized
@@ -261,36 +266,45 @@ const Window: React.FC<WindowProps> = ({
   return (
     <motion.div
       ref={windowRef}
-      className={`absolute flex flex-col ${
+      className={`fixed flex flex-col ${
         osType === 'mac' 
           ? 'rounded-lg overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl' 
           : osType === 'windows'
             ? 'border border-gray-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl'
             : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl'
       } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-      style={{
+      initial={{ 
+        scale: 0.9, 
+        opacity: 0,
         x: position.x,
-        y: position.y,
-        width: size.width,
-        height: size.height,
-        zIndex,
+        y: position.y
       }}
-      initial={{ scale: 0.9, opacity: 0 }}
       animate={{ 
         scale: 1, 
         opacity: 1,
+        x: position.x,
+        y: position.y,
+        width: typeof size.width === 'number' ? size.width : undefined,
+        height: typeof size.height === 'number' ? size.height : undefined,
         boxShadow: isFocused ? "0px 10px 30px rgba(0, 0, 0, 0.2)" : "0px 4px 10px rgba(0, 0, 0, 0.1)"
+      }}
+      style={{
+        width: typeof size.width === 'string' ? size.width : undefined,
+        height: typeof size.height === 'string' ? size.height : undefined,
+        zIndex,
       }}
       exit={{ scale: 0.9, opacity: 0 }}
       transition={{ 
         type: "spring",
         duration: 0.2,
+        bounce: 0.15,
         opacity: { duration: 0.15 },
         boxShadow: { duration: 0.3 }
       }}
       drag={!isMaximized}
       dragMomentum={false}
-      dragListener={!isMaximized}
+      dragConstraints={{ left: 0, top: 0, right: globalThis.window.innerWidth - 100, bottom: globalThis.window.innerHeight - 100 }}
+      dragElastic={0.1}
       onDragStart={() => setIsDragging(true)}
       onDragEnd={(_, info) => {
         setIsDragging(false); 

@@ -112,7 +112,7 @@ const About: React.FC = () => {
           <h2 className="text-2xl font-semibold border-b pb-2">Projects</h2>
           <div className="space-y-4">
             <div>
-              <h3 className="font-semibold">Portfolio OS Interface</h3>
+              <h3 className="font-semibold">Splax OS Interface</h3>
               <p className="text-gray-700 dark:text-gray-300">
                 A unique portfolio website that mimics different operating systems, showcasing full-stack development 
                 skills using Next.js, TypeScript, and modern web technologies. Features include dynamic window 
