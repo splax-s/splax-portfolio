@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="androidGradient" x1="0" y1="0" x2="1920" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" style="stop-color:#065F46"/>
+      <stop offset="50%" style="stop-color:#047857"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="40" />
+    </filter>
+  </defs>
+  
+  <!-- Base background -->
+  <rect width="1920" height="1080" fill="url(#androidGradient)"/>
+  
+  <!-- Material Design inspired shapes -->
+  <g opacity="0.2" filter="url(#blur)">
+    <circle cx="960" cy="540" r="300" fill="#10B981"/>
+    <rect x="810" y="390" width="300" height="300" rx="40" fill="#34D399" transform="rotate(45 960 540)"/>
+    <circle cx="960" cy="540" r="200" fill="#6EE7B7"/>
+  </g>
+  
+  <!-- Subtle pattern -->
+  <g opacity="0.1">
+    <rect width="1920" height="1080" fill="url(#dots)"/>
+  </g>
+  
+  <!-- Material Design waves -->
+  <g opacity="0.1" stroke="white" stroke-width="2" fill="none">
+    <path d="M0 880 Q 480 780 960 880 T 1920 880"/>
+    <path d="M0 920 Q 480 820 960 920 T 1920 920"/>
+    <path d="M0 960 Q 480 860 960 960 T 1920 960"/>
+  </g>
+</svg>

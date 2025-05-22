@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="iosGradient" x1="0" y1="0" x2="390" y2="844" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" style="stop-color:#000000"/>
+      <stop offset="50%" style="stop-color:#18181B"/>
+      <stop offset="100%" style="stop-color:#27272A"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="20" />
+    </filter>
+  </defs>
+  
+  <!-- Base background -->
+  <rect width="390" height="844" fill="url(#iosGradient)"/>
+  
+  <!-- Abstract shapes -->
+  <g filter="url(#glow)" opacity="0.3">
+    <circle cx="195" cy="422" r="150" fill="#A855F7"/>
+    <circle cx="295" cy="322" r="100" fill="#EC4899"/>
+    <circle cx="95" cy="522" r="120" fill="#6366F1"/>
+  </g>
+  
+  <!-- Subtle grid pattern -->
+  <g opacity="0.1" stroke="white" stroke-width="0.5">
+    <line x1="0" y1="211" x2="390" y2="211"/>
+    <line x1="0" y1="422" x2="390" y2="422"/>
+    <line x1="0" y1="633" x2="390" y2="633"/>
+    <line x1="97.5" y1="0" x2="97.5" y2="844"/>
+    <line x1="195" y1="0" x2="195" y2="844"/>
+    <line x1="292.5" y1="0" x2="292.5" y2="844"/>
+  </g>
+</svg>
