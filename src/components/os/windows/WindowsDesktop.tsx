@@ -101,7 +101,7 @@ const WindowsStartMenu: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 onClose();
               }}
             >
-              <img src={app.icon} alt={app.title} className="w-10 h-10 mb-1" />
+              <Image src={app.icon} alt={app.title} className="w-10 h-10 mb-1" width={40} height={40}/>
               <span className="text-xs text-center">{app.title}</span>
             </button>
           ))}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOsStore } from '@/store/useOsStore';
+import Image from 'next/image';
 
 const AndroidHomeScreen: React.FC = () => {
   const { windows, toggleApp } = useOsStore();
@@ -228,7 +229,7 @@ const AndroidHomeScreen: React.FC = () => {
                         boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)"
                       }}
                     >
-                      <img src={app.icon} alt="" className="w-8 h-8" />
+                      <Image src={app.icon} alt="" className="w-8 h-8" width={32} height={32} />
                     </motion.div>
                     <span className="mt-1 text-xs text-white bg-black/30 px-2 rounded-md">{app.title}</span>
                   </motion.button>
@@ -281,7 +282,7 @@ const AndroidHomeScreen: React.FC = () => {
                 aria-label={`Open ${app.title}`}
               >
                 <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shadow-md">
-                  <img src={app.icon} alt="" className="w-8 h-8" />
+                  <Image src={app.icon} alt="" className="w-8 h-8" width={32} height={32}/>
                 </div>
                 <span className="mt-1 text-xs text-white">{app.title}</span>
               </motion.button>

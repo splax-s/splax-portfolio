@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useOsStore } from '@/store/useOsStore';
+import Image from 'next/image';
 
 const MacDock: React.FC = () => {
   const { windows, toggleApp } = useOsStore();
@@ -32,7 +33,7 @@ const MacDock: React.FC = () => {
           whileTap={{ scale: 0.9 }}
           onClick={() => toggleApp(app.id)}
         >
-          <img src={app.icon} alt={app.title} className="w-10 h-10" />
+          <Image src={app.icon} alt={app.title} className="w-10 h-10" width={40} height={40} />
           {app.isOpen && (
             <div className="absolute bottom-0.5 w-1 h-1 rounded-full bg-white" />
           )}

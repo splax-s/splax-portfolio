@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useOsStore } from '@/store/useOsStore';
-
+import Image from 'next/image';
 interface WindowProps {
   id: string;
   title: string;
@@ -337,7 +337,7 @@ const Window: React.FC<WindowProps> = ({
         ) : (
           <>
             <div className="flex items-center">
-              <img src={icon} alt={title} className="w-4 h-4 mr-2" />
+              <Image src={icon} alt={title} className="w-4 h-4 mr-2" width={16} height={16} />
               <h2 className="text-sm font-medium">{title}</h2>
             </div>
             {renderWindowControls()}
