@@ -21,15 +21,12 @@ const Window: React.FC<WindowProps> = ({
 }) => {
   // State and ref declarations
   const windowRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null); // Move ref declaration to top level
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [localSize, setLocalSize] = useState(initialSize);
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
-
-  // Memoize values to prevent recreation on each render
-  const startResizePosition = useMemo(() => ({ x: 0, y: 0 }), []);
-  const startResizeSize = useMemo(() => initialSize, [initialSize]);
 
   // Store interaction
   const {
@@ -43,6 +40,13 @@ const Window: React.FC<WindowProps> = ({
     moveWindow,
     resizeWindow,
   } = useOsStore();
+
+  // Determine if we're on a mobile device early
+  const isMobile = osType === 'ios' || osType === 'android';
+
+  // Memoize values to prevent recreation on each render
+  const startResizePosition = useMemo(() => ({ x: 0, y: 0 }), []);
+  const startResizeSize = useMemo(() => initialSize, [initialSize]);
 
   // Window data
   const window = windows.find(w => w.id === id);
@@ -116,6 +120,17 @@ const Window: React.FC<WindowProps> = ({
     }
   }, [isFocused]);
 
+  // Input focus effect for mobile devices (moved from conditional)
+  useEffect(() => {
+    // Only run the focus logic for mobile devices
+    if (isMobile && isFocused && inputRef.current) {
+      // Short delay to ensure UI has rendered
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [isFocused, isMobile]);
+
   useEffect(() => {
     if (isResizing && typeof globalThis.window !== 'undefined') {
       globalThis.window.addEventListener('mousemove', handleResizeMove);
@@ -180,8 +195,6 @@ const Window: React.FC<WindowProps> = ({
   // Use local state during resize to avoid animation lag
   const displaySize = isResizing ? localSize : windowSize;
   
-  const isMobile = osType === 'ios' || osType === 'android';
-
   // Handle window controls based on OS type
   const renderWindowControls = () => {
     switch (osType) {
@@ -274,7 +287,14 @@ const Window: React.FC<WindowProps> = ({
         animate={iosStyles.animate}
         exit={iosStyles.exit}
         transition={iosStyles.transition}
-        onClick={() => focusApp(id)}
+        onClick={() => {
+          focusApp(id);
+          // Try to focus any input element when the window is tapped
+          const inputs = document.querySelectorAll('input, textarea');
+          if (inputs.length > 0) {
+            (inputs[0] as HTMLElement).focus();
+          }
+        }}
         tabIndex={0}
       >
         <motion.div 

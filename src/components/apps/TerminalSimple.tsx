@@ -15,6 +15,19 @@ const TerminalSimple: React.FC = () => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
+    
+    // Re-focus input field when window is clicked or tapped
+    const handleWindowClick = () => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    };
+    
+    window.addEventListener('click', handleWindowClick);
+    
+    return () => {
+      window.removeEventListener('click', handleWindowClick);
+    };
   }, []);
   
   const handleSubmit = (e: React.FormEvent) => {

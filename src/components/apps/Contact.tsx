@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useOsStore } from '@/store/useOsStore';
 
 const Contact: React.FC = () => {
@@ -13,6 +13,22 @@ const Contact: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  
+  // Input refs for mobile focus handling
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Handle mobile keyboard display
+  useEffect(() => {
+    const isMobile = osType === 'ios' || osType === 'android';
+    if (isMobile && nameInputRef.current) {
+      // Focus the first input field with a slight delay to ensure window is fully rendered
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 300);
+    }
+  }, [osType]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormState({
@@ -152,6 +168,7 @@ const Contact: React.FC = () => {
               <div>
                 <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
                 <input
+                  ref={nameInputRef}
                   type="text"
                   id="name"
                   value={formState.name}
@@ -168,6 +185,7 @@ const Contact: React.FC = () => {
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
                 <input
+                  ref={emailInputRef}
                   type="email"
                   id="email"
                   value={formState.email}
@@ -184,6 +202,7 @@ const Contact: React.FC = () => {
               <div>
                 <label htmlFor="message" className="block text-sm font-medium mb-1">Message</label>
                 <textarea
+                  ref={messageInputRef}
                   id="message"
                   value={formState.message}
                   onChange={handleChange}

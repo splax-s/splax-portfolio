@@ -99,6 +99,24 @@ const Terminal: React.FC = () => {
     const handleClick = (e: MouseEvent) => {
       if (terminalRef.current?.contains(e.target as Node)) {
         setFocused(true);
+        
+        // For mobile devices, show keyboard when terminal is tapped
+        if (osType === 'ios' || osType === 'android') {
+          // Create a temporary input element to focus and trigger the virtual keyboard
+          const temp = document.createElement('input');
+          temp.style.position = 'absolute';
+          temp.style.opacity = '0';
+          temp.style.height = '0';
+          temp.style.width = '0';
+          temp.style.pointerEvents = 'none';
+          document.body.appendChild(temp);
+          temp.focus();
+          
+          // Remove the temporary input after a short delay
+          setTimeout(() => {
+            document.body.removeChild(temp);
+          }, 100);
+        }
       } else {
         setFocused(false);
       }
@@ -106,7 +124,7 @@ const Terminal: React.FC = () => {
     
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, []);
+  }, [osType]);
   
   // Scroll to bottom after command execution
   useEffect(() => {
