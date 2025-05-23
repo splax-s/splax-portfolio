@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useOsStore } from '@/store/useOsStore';
 import Image from 'next/image';
@@ -19,84 +19,19 @@ const Window: React.FC<WindowProps> = ({
   initialPosition = { x: 400, y: 400 },
   initialSize = { width: 600, height: 400 },
 }) => {
-  // Declare all hooks first
+  // State and ref declarations
   const windowRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [localSize, setLocalSize] = useState(initialSize);
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
-  const [startResizePosition, setStartResizePosition] = useState({ x: 0, y: 0 });
-  const [startResizeSize, setStartResizeSize] = useState(initialSize);
-  
-  const handleClose = () => {
-    // Just trigger the closing animation
-    setIsClosing(true);
-  };
-  
-  const handleResizeStart = (direction: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-    setResizeDirection(direction);
-    setStartResizePosition({ x: e.clientX, y: e.clientY });
-    
-    // Ensure we start with numeric values
-    const currentWidth = typeof window?.size?.width === 'number' ? window.size.width : initialSize.width;
-    const currentHeight = typeof window?.size?.height === 'number' ? window.size.height : initialSize.height;
-    
-    setStartResizeSize({ width: currentWidth, height: currentHeight });
-    setLocalSize({ width: currentWidth, height: currentHeight });
-  };
-  
-  const handleResizeMove = (e: MouseEvent) => {
-    if (!isResizing || !resizeDirection) return;
 
-    const deltaX = e.clientX - startResizePosition.x;
-    const deltaY = e.clientY - startResizePosition.y;
-    
-    let newWidth = startResizeSize.width;
-    let newHeight = startResizeSize.height;
-    
-    // Update size based on resize direction
-    if (resizeDirection.includes('e')) {
-      newWidth = Math.max(200, startResizeSize.width + deltaX);
-    }
-    if (resizeDirection.includes('s')) {
-      newHeight = Math.max(200, startResizeSize.height + deltaY);
-    }
-    if (resizeDirection.includes('w')) {
-      const widthDelta = -deltaX;
-      newWidth = Math.max(200, startResizeSize.width + widthDelta);
-      if (window?.position) {
-        moveWindow(id, { 
-          x: window.position.x - widthDelta, 
-          y: window.position.y 
-        });
-      }
-    }
-    if (resizeDirection.includes('n')) {
-      const heightDelta = -deltaY;
-      newHeight = Math.max(200, startResizeSize.height + heightDelta);
-      if (window?.position) {
-        moveWindow(id, { 
-          x: window.position.x, 
-          y: window.position.y - heightDelta 
-        });
-      }
-    }
-    
-    setLocalSize({ width: newWidth, height: newHeight });
-  };
-  
-  const handleResizeEnd = () => {
-    if (isResizing) {
-      setIsResizing(false);
-      setResizeDirection(null);
-      // Update the global store with the final size
-      resizeWindow(id, localSize);
-    }
-  };
-  
+  // Memoize values to prevent recreation on each render
+  const startResizePosition = useMemo(() => ({ x: 0, y: 0 }), []);
+  const startResizeSize = useMemo(() => initialSize, [initialSize]);
+
+  // Store interaction
   const {
     osType,
     windows,
@@ -108,19 +43,72 @@ const Window: React.FC<WindowProps> = ({
     moveWindow,
     resizeWindow,
   } = useOsStore();
-  
+
+  // Window data
   const window = windows.find(w => w.id === id);
-  
-  // Get properties safely with defaults
   const isFocused = window?.isFocused ?? false;
   const isMaximized = window?.isMaximized ?? false;
   const zIndex = window?.zIndex ?? 0;
 
+  // Handlers
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+  }, []);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !resizeDirection || !window) return;
+
+    const deltaX = e.clientX - startResizePosition.x;
+    const deltaY = e.clientY - startResizePosition.y;
+    
+    let newWidth = startResizeSize.width;
+    let newHeight = startResizeSize.height;
+    
+    if (resizeDirection.includes('e')) {
+      newWidth = Math.max(200, startResizeSize.width + deltaX);
+    }
+    if (resizeDirection.includes('s')) {
+      newHeight = Math.max(200, startResizeSize.height + deltaY);
+    }
+    if (resizeDirection.includes('w')) {
+      const widthDelta = -deltaX;
+      newWidth = Math.max(200, startResizeSize.width + widthDelta);
+      if (window.position) {
+        moveWindow(id, { 
+          x: window.position.x - widthDelta, 
+          y: window.position.y 
+        });
+      }
+    }
+    if (resizeDirection.includes('n')) {
+      const heightDelta = -deltaY;
+      newHeight = Math.max(200, startResizeSize.height + heightDelta);
+      if (window.position) {
+        moveWindow(id, { 
+          x: window.position.x, 
+          y: window.position.y - heightDelta 
+        });
+      }
+    }
+    
+    setLocalSize({ width: newWidth, height: newHeight });
+  }, [isResizing, resizeDirection, startResizePosition, startResizeSize, window, moveWindow, id]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (isResizing) {
+      setIsResizing(false);
+      setResizeDirection(null);
+      resizeWindow(id, localSize);
+    }
+  }, [isResizing, resizeWindow, id, localSize]);
+  
+
+  // Effects - all before conditional returns
   useEffect(() => {
     if (window && !window.isOpen && !isClosing) {
       setIsClosing(true);
     }
-  }, [window?.isOpen, isClosing]);
+  }, [window, isClosing]);
 
   useEffect(() => {
     if (isFocused && windowRef.current) {
@@ -140,8 +128,17 @@ const Window: React.FC<WindowProps> = ({
       }
     };
   }, [isResizing, handleResizeMove, handleResizeEnd]);
-  
-  // Return only after all hooks are called
+
+  useEffect(() => {
+    if (isClosing) {
+      const timer = setTimeout(() => {
+        closeApp(id);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isClosing, closeApp, id]);
+
+  // Only return after all hooks have been called
   if (!window || (!window.isOpen && !isClosing)) return null;
 
   // Calculate position in the center of the screen for new windows
@@ -184,23 +181,6 @@ const Window: React.FC<WindowProps> = ({
   const displaySize = isResizing ? localSize : windowSize;
   
   const isMobile = osType === 'ios' || osType === 'android';
-  
-  useEffect(() => {
-    if (isFocused && windowRef.current) {
-      windowRef.current.focus();
-    }
-  }, [isFocused]);
-  
-  // Watch for isClosing changes
-  useEffect(() => {
-    if (isClosing) {
-      // Wait for animation to complete
-      const timer = setTimeout(() => {
-        closeApp(id);
-      }, 200); // Match this with your animation duration
-      return () => clearTimeout(timer);
-    }
-  }, [isClosing, closeApp, id]);
 
   // Handle window controls based on OS type
   const renderWindowControls = () => {

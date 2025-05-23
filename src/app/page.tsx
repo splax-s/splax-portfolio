@@ -7,7 +7,7 @@ const OSSystem = dynamic(() => import('@/components/os/OSSystem'), {
   ssr: false,
   loading: () => (
     <div className="fixed inset-0 flex items-center justify-center bg-black text-white text-lg">
-      Loading OS...
+      Compiling...
     </div>
   ),
 });

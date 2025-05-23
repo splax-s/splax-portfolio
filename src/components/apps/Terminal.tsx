@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useOsStore } from '@/store/useOsStore';
 import { useTerminalStore } from '@/store/useTerminalStore';
 import { commands } from '@/lib/terminal/commands';
@@ -57,12 +57,14 @@ const Terminal: React.FC = () => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
         e.preventDefault();
         setTheme(current => {
-          switch (current) {
-            case 'dark': return 'matrix';
-            case 'matrix': return 'retro';
-            case 'retro': return 'synthwave';
-            default: return 'dark';
+          const nextTheme = current === 'dark' ? 'matrix' :
+                          current === 'matrix' ? 'retro' :
+                          current === 'retro' ? 'synthwave' : 'dark';
+          // Store theme in localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('terminal-theme', nextTheme);
           }
+          return nextTheme;
         });
         // Add fade effect
         setOpacity(0);
@@ -129,7 +131,7 @@ const Terminal: React.FC = () => {
   }, [theme]);
 
   // Keyboard input handling
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!focused) return;
     
     // Handle Cmd/Ctrl + Key combinations
@@ -298,12 +300,12 @@ const Terminal: React.FC = () => {
           setCursorPosition(prev => prev + 1);
         }
     }
-  };
+  }, [focused, currentInput, cursorPosition, executeCommand, navigateHistory, autoCompleteHint, clearTerminal]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [focused, currentInput, cursorPosition, executeCommand, navigateHistory, autoCompleteHint]);
+  }, [focused, currentInput, cursorPosition, executeCommand, navigateHistory, autoCompleteHint, handleKeyDown]);
 
   // Handle command output typing effect
   useEffect(() => {
@@ -384,9 +386,9 @@ const Terminal: React.FC = () => {
 
         {/* Welcome Message */}
         <div className={`mb-4 ${styles.text} font-bold`}>
-          {osType === 'mac' ? '📍' : '>'} Welcome to Splax's Interactive Terminal
+          {osType === 'mac' ? '📍' : '>'} Welcome to Splax&apos;s Interactive Terminal
           <div className={`mt-1 ${styles.output} font-normal text-sm`}>
-            Type 'help' for commands • Cmd/Ctrl+T to change theme • Cmd/Ctrl+L to clear
+            Type &apos;help&apos;p for commands • Cmd/Ctrl+T to change theme • Cmd/Ctrl+L to clear
           </div>
         </div>
         

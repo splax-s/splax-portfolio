@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { contact } from '@/lib/terminal/data';
 import { useOsStore } from '@/store/useOsStore';
 
 const Contact: React.FC = () => {
@@ -35,32 +33,38 @@ const Contact: React.FC = () => {
     const newErrors: Record<string, string> = {};
     
     if (!formState.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
     
     if (!formState.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
     
     if (!formState.message.trim()) {
-      newErrors.message = 'Message is required';
+      newErrors.message = "Message is required";
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validate()) {
       setIsSubmitting(true);
       
-      // Simulate API call
-      setTimeout(() => {
-        setIsSubmitting(false);
+      try {
+        // Create mailto URL with form data
+        const mailtoLink = `mailto:ikhanobamichael@gmail.com?subject=Contact from ${encodeURIComponent(formState.name)}&body=${encodeURIComponent(
+          `Name: ${formState.name}\nEmail: ${formState.email}\n\nMessage:\n${formState.message}`
+        )}`;
+
+        // Open email client
+        window.location.href = mailtoLink;
+        
         setSubmitted(true);
         
         // Reset form after submission
@@ -69,12 +73,21 @@ const Contact: React.FC = () => {
           email: '',
           message: ''
         });
-        
-        // Reset submitted state after 5 seconds
+
+        // Success notification
         setTimeout(() => {
           setSubmitted(false);
         }, 5000);
-      }, 1000);
+      } catch (error) {
+        console.error('Error opening mail client:', error);
+        // Handle error appropriately
+        setErrors({
+          ...errors,
+          submit: 'Failed to open mail client. Please try again or use the contact information above.'
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -94,27 +107,12 @@ const Contact: React.FC = () => {
     }
   };
 
-  const getFormStyle = () => {
-    switch (osType) {
-      case 'mac':
-        return 'bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm';
-      case 'windows':
-        return 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700';
-      case 'ios':
-        return 'bg-gray-50 dark:bg-gray-800 rounded-xl shadow-md';
-      case 'android':
-        return 'bg-gray-50 dark:bg-gray-800 rounded-lg shadow';
-      default:
-        return 'bg-gray-50 dark:bg-gray-800 rounded-lg';
-    }
-  };
-
   return (
     <div className="w-full h-full p-6 overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
       <div className="max-w-2xl mx-auto space-y-8">
         <header className="text-center">
           <h1 className="text-3xl font-bold mb-2">Get in Touch</h1>
-          <p className="text-gray-600 dark:text-gray-300">Let's connect and discuss opportunities</p>
+          <p className="text-gray-600 dark:text-gray-300">Let&apos;s connect and discuss opportunities</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -156,33 +154,78 @@ const Contact: React.FC = () => {
                 <input
                   type="text"
                   id="name"
-                  className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  value={formState.name}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 ${
+                    errors.name ? 'border-red-500' : ''
+                  }`}
                   required
                 />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
                 <input
                   type="email"
                   id="email"
-                  className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  value={formState.email}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 ${
+                    errors.email ? 'border-red-500' : ''
+                  }`}
                   required
                 />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="message" className="block text-sm font-medium mb-1">Message</label>
                 <textarea
                   id="message"
+                  value={formState.message}
+                  onChange={handleChange}
                   rows={4}
-                  className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  className={`w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 ${
+                    errors.message ? 'border-red-500' : ''
+                  }`}
                   required
                 ></textarea>
+                {errors.message && (
+                  <p className="mt-1 text-sm text-red-500">{errors.message}</p>
+                )}
               </div>
+              
+              {errors.submit && (
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
+                  {errors.submit}
+                </div>
+              )}
+              
+              {submitted && (
+                <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg">
+                  Opening your email client...
+                </div>
+              )}
+              
               <button
                 type="submit"
-                className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors"
+                disabled={isSubmitting}
+                className={`w-full py-2 px-4 ${getButtonStyle()} transition-colors flex items-center justify-center space-x-2`}
               >
-                Send Message
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  'Send Message'
+                )}
               </button>
             </form>
           </section>

@@ -8,7 +8,9 @@ import TerminalSimple from '@/components/apps/TerminalSimple';
 // Dynamically import the Terminal component with no SSR to avoid hydration issues
 const Terminal = dynamic(() => import('@/components/apps/Terminal').catch(() => {
   // If terminal fails to load, return a simple div that will trigger error boundary
-  return () => <div>Terminal load failed</div>;
+  const FallbackComponent = () => (<div>Terminal load failed</div>);
+  FallbackComponent.displayName = 'TerminalFallback';
+  return FallbackComponent;
 }), {
   ssr: false,
   loading: () => (
@@ -34,6 +36,8 @@ export const DynamicTerminal: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const { osType } = useOsStore();
+
+  console.log(isLoaded, loadError);
 
   useEffect(() => {
     mounted.current = true;

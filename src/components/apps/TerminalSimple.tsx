@@ -3,7 +3,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useOsStore } from '@/store/useOsStore';
 import { useTerminalStore } from '@/store/useTerminalStore';
-import { commands } from '@/lib/terminal/commands';
 
 const TerminalSimple: React.FC = () => {
   const { osType } = useOsStore();
@@ -58,7 +57,7 @@ const TerminalSimple: React.FC = () => {
                                                           
 `}
           </pre>
-          <p className="mb-2">Welcome to Terminal. Type 'help' to see available commands.</p>
+          <p className="mb-2">Welcome to Terminal. Type &apos;help&apos; to see available commands.</p>
         </div>
         
         {history.map((item, index) => (

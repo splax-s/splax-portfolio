@@ -13,6 +13,8 @@ const IosHomeScreen: React.FC = () => {
     hour12: false
   });
 
+  console.log(currentTime)
+
   return (
     <div className="relative w-full h-full bg-cover bg-center"
          style={{ backgroundImage: 'url(/backgrounds/new-ios-background.svg)' }}>

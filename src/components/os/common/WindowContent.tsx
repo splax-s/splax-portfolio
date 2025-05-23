@@ -26,7 +26,8 @@ const components = {
 const WindowContent: React.FC<WindowContentProps> = ({ component }) => {
   // Always declare all hooks at the top level
   const [mounted, setMounted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const error: string | null = null; // Placeholder for error handling
   const Component = components[component as keyof typeof components];
   
   useEffect(() => {

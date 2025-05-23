@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOsStore } from '@/store/useOsStore';
 import Image from 'next/image';
@@ -215,7 +215,7 @@ const AndroidHomeScreen: React.FC = () => {
               >
                 {windows.slice(0, appsPerPage).map((app, index) => (
                   <motion.button
-                    key={app.id}
+                    key={app.id + index.toString()}
                     className="flex flex-col items-center"
                     variants={item}
                     whileHover={{ scale: 1.05 }}
@@ -270,7 +270,7 @@ const AndroidHomeScreen: React.FC = () => {
           >
             {windows.map((app, index) => (
               <motion.button
-                key={app.id}
+                key={app.id + index.toString()}
                 className="flex flex-col items-center"
                 variants={item}
                 whileHover={{ scale: 1.05 }}

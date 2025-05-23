@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { TerminalHistory, TerminalState } from '@/types/terminal';
+import { TerminalState } from '@/types/terminal';
 import { commands } from '@/lib/terminal/commands';
 
 interface TerminalStore extends TerminalState {
@@ -27,7 +27,7 @@ const processCommand = (input: string): { output: string; type: 'success' | 'err
   const command = commands[commandName];
   if (!command) {
     return {
-      output: `Command not found: ${commandName}\nType 'help' to see available commands.`,
+      output: `Command not found: ${commandName}\nType &apos;help&apos; to see available commands.`,
       type: 'error'
     };
   }
