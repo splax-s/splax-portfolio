@@ -20,6 +20,9 @@ const components = {
   }),
   Contact: dynamic(() => import('@/components/apps/Contact'), {
     loading: () => <div className="w-full h-full flex items-center justify-center">Loading Contact...</div>
+  }),
+  Settings: dynamic(() => import('@/components/apps/Settings'), {
+    loading: () => <div className="w-full h-full flex items-center justify-center">Loading Settings...</div>
   })
 };
 

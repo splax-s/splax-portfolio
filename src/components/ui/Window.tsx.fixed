@@ -31,8 +31,6 @@ const Window: React.FC<WindowProps> = ({
   const [localSize, setLocalSize] = useState(initialSize);
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
 
-  console.log(isDragging)
-
   // Get preferences
   const { motionReduced } = usePreferences();
   const { playSound } = useSound();
@@ -62,7 +60,7 @@ const Window: React.FC<WindowProps> = ({
   const isFocused = window?.isFocused ?? false;
   const isMaximized = window?.isMaximized ?? false;
   const zIndex = window?.zIndex ?? 0;
-  // const position = window?.position ?? initialPosition;
+  const position = window?.position ?? initialPosition;
 
   // Utility functions
   const getWindowStyle = () => {
@@ -95,33 +93,33 @@ const Window: React.FC<WindowProps> = ({
     }
   };
 
-  // const getControlButtonStyle = (type: 'minimize' | 'maximize' | 'close') => {
-  //   if (osType === 'mac') {
-  //     switch (type) {
-  //       case 'minimize':
-  //         return 'bg-yellow-500 hover:bg-yellow-600';
-  //       case 'maximize':
-  //         return 'bg-green-500 hover:bg-green-600';
-  //       case 'close':
-  //         return 'bg-red-500 hover:bg-red-600';
-  //       default:
-  //         return '';
-  //     }
-  //   } else if (osType === 'windows') {
-  //     return ''; // Windows uses text buttons
-  //   } else {
-  //     switch (type) {
-  //       case 'minimize':
-  //         return 'bg-gray-400 hover:bg-gray-500';
-  //       case 'maximize':
-  //         return 'bg-gray-400 hover:bg-gray-500';
-  //       case 'close':
-  //         return 'bg-red-500 hover:bg-red-600';
-  //       default:
-  //         return '';
-  //     }
-  //   }
-  // };
+  const getControlButtonStyle = (type: 'minimize' | 'maximize' | 'close') => {
+    if (osType === 'mac') {
+      switch (type) {
+        case 'minimize':
+          return 'bg-yellow-500 hover:bg-yellow-600';
+        case 'maximize':
+          return 'bg-green-500 hover:bg-green-600';
+        case 'close':
+          return 'bg-red-500 hover:bg-red-600';
+        default:
+          return '';
+      }
+    } else if (osType === 'windows') {
+      return ''; // Windows uses text buttons
+    } else {
+      switch (type) {
+        case 'minimize':
+          return 'bg-gray-400 hover:bg-gray-500';
+        case 'maximize':
+          return 'bg-gray-400 hover:bg-gray-500';
+        case 'close':
+          return 'bg-red-500 hover:bg-red-600';
+        default:
+          return '';
+      }
+    }
+  };
 
   const getTransition = () => {
     if (motionReduced) {
@@ -179,51 +177,53 @@ const Window: React.FC<WindowProps> = ({
   }, [id, isMaximized, maximizeApp, restoreApp, playSound]);
 
   // Start dragging the window
-  const startDragging = useCallback((e: React.MouseEvent | React.TouchEvent) => {  
+  const startDragging = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     
     // Don't drag if maximized
     if (isMaximized) return;
     
-    // Get initial position
-    let initialClientX: number;
-    let initialClientY: number;
+    setIsDragging(true);
+    
+    let lastClientX: number;
+    let lastClientY: number;
     
     if ('touches' in e) {
       // Touch event
-      initialClientX = e.touches[0].clientX;
-      initialClientY = e.touches[0].clientY;
+      lastClientX = e.touches[0].clientX;
+      lastClientY = e.touches[0].clientY;
     } else {
       // Mouse event
-      initialClientX = e.clientX;
-      initialClientY = e.clientY;
+      lastClientX = e.clientX;
+      lastClientY = e.clientY;
     }
     
-    // Store initial window position
-    const initialWindowPosition = window?.position || { x: 0, y: 0 };
-    
-    // Set dragging state
-    setIsDragging(true);
-
     const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-      let currentClientX: number;
-      let currentClientY: number;
+      if (!isDragging) return;
+      
+      let clientX: number;
+      let clientY: number;
       
       if ('touches' in e) {
-        currentClientX = e.touches[0].clientX;
-        currentClientY = e.touches[0].clientY;
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
       } else {
-        currentClientX = (e as MouseEvent).clientX;
-        currentClientY = (e as MouseEvent).clientY;
+        clientX = e.clientX;
+        clientY = e.clientY;
       }
       
-      const deltaX = currentClientX - initialClientX;
-      const deltaY = currentClientY - initialClientY;
+      const deltaX = clientX - lastClientX;
+      const deltaY = clientY - lastClientY;
       
-      moveWindow(id, {
-        x: initialWindowPosition.x + deltaX,
-        y: initialWindowPosition.y + deltaY
-      });
+      if (window && window.position) {
+        moveWindow(id, {
+          x: window.position.x + deltaX,
+          y: window.position.y + deltaY
+        });
+      }
+      
+      lastClientX = clientX;
+      lastClientY = clientY;
     };
     
     const handleMouseUp = () => {
@@ -238,7 +238,7 @@ const Window: React.FC<WindowProps> = ({
     document.addEventListener('touchmove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('touchend', handleMouseUp);
-}, [id, isMaximized, moveWindow, window]);
+  }, [id, isMaximized, isDragging, moveWindow, window]);
 
   const handleResizeMove = useCallback((e: MouseEvent) => {
     if (!isResizing || !resizeDirection || !window) return;
@@ -563,7 +563,7 @@ const Window: React.FC<WindowProps> = ({
       ref={windowRef}
       className={`absolute overflow-hidden ${getWindowStyle()} ${isClosing ? 'scale-95 opacity-0' : ''}`}
       style={{
-        zIndex: 100 + zIndex,
+        zIndex: zIndex,
         width: isMaximized ? '100%' : displaySize.width,
         height: isMaximized ? '100%' : displaySize.height,
         left: isMaximized ? 0 : windowPosition.x,

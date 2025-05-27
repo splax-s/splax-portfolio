@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useOsStore } from '@/store/useOsStore';
+import { AppProviders } from '@/components/providers/AppProviders';
 import { detectOS } from '@/lib/os/detectOS';
 
 // OS-specific components
@@ -97,39 +98,41 @@ const OSSystem: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
-      <AnimatePresence mode="wait">
-        {isBooting ? (
-          renderBootScreen()
-        ) : (
-          <motion.div
-            key="os-content"
-            className="w-full h-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            {renderOS()}
-            <AnimatePresence>
-              {windows.map((window) =>
-                window.isOpen ? (
-                  <Window
-                    key={window.id}
-                    id={window.id}
-                    title={window.title}
-                    icon={window.icon}
-                    initialPosition={window.position}
-                    initialSize={window.size}
-                  >
-                    <DynamicWindowContent component={window.component} />
-                  </Window>
-                ) : null
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <AppProviders>
+      <div className="fixed inset-0 overflow-hidden">
+        <AnimatePresence mode="wait">
+          {isBooting ? (
+            renderBootScreen()
+          ) : (
+            <motion.div
+              key="os-content"
+              className="w-full h-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {renderOS()}
+              <AnimatePresence>
+                {windows.map((window) =>
+                  window.isOpen ? (
+                    <Window
+                      key={window.id}
+                      id={window.id}
+                      title={window.title}
+                      icon={window.icon}
+                      initialPosition={window.position}
+                      initialSize={window.size}
+                    >
+                      <DynamicWindowContent component={window.component} />
+                    </Window>
+                  ) : null
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </AppProviders>
   );
 };
 

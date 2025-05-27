@@ -78,10 +78,10 @@ const About: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-400">Parallel Experience • 2023 - Present</p>
               <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-700 dark:text-gray-300">
                 <li>Develop full-stack applications using modern frameworks and technologies</li>
-                <li>Implement RESTful APIs and microservices architectures</li>
+                <li>Implement <strong>RESTful</strong> APIs and microservices architectures</li>
                 <li>Create responsive web applications with React and Next.js</li>
                 <li>Write efficient Python scripts for automation and data processing</li>
-                <li>Practice DevOps methodologies including CI/CD and Infrastructure as Code</li>
+                <li>Practice DevOps methodologies including <strong>CI/CD</strong> and Infrastructure as Code</li>
               </ul>
             </div>
           </div>

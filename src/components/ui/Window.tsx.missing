@@ -1,0 +1,37 @@
+// Add the missing functions at the end of the file:
+
+const startDragging = () => {
+  // Handle drag start logic
+};
+
+// Get window styling based on OS
+const getWindowStyle = () => {
+  return 'border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg';
+};
+
+// Get title bar styling based on OS
+const getTitleBarStyle = () => {
+  return 'bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700';
+};
+
+// Get control button styling
+const getControlButtonStyle = (type: 'minimize' | 'maximize' | 'close') => {
+  switch (type) {
+    case 'minimize':
+      return 'bg-yellow-500 hover:bg-yellow-600';
+    case 'maximize':
+      return 'bg-green-500 hover:bg-green-600';
+    case 'close':
+      return 'bg-red-500 hover:bg-red-600';
+    default:
+      return '';
+  }
+};
+
+// Get transition settings based on motion preference
+const getTransition = () => {
+  if (motionReduced) {
+    return { duration: 0.1 }; // Minimal transition for reduced motion
+  }
+  return { type: 'spring', stiffness: 300, damping: 20 };
+};

@@ -43,6 +43,7 @@ const IosHomeScreen: React.FC = () => {
           { name: 'Projects', icon: '/icons/projects.svg', id: 'projects' },
           { name: 'Terminal', icon: '/icons/terminal.svg', id: 'terminal' },
           { name: 'Contact', icon: '/icons/contact.svg', id: 'contact' },
+          { name: 'Settings', icon: '/icons/settings.svg', id: 'settings' },
         ].map((app) => (
           <motion.button
             key={app.id}
@@ -73,6 +74,7 @@ const IosHomeScreen: React.FC = () => {
             { name: 'Projects', icon: '/icons/projects.svg', id: 'projects' },
             { name: 'Terminal', icon: '/icons/terminal.svg', id: 'terminal' },
             { name: 'Contact', icon: '/icons/contact.svg', id: 'contact' },
+            { name: 'Settings', icon: '/icons/settings.svg', id: 'settings' },
           ].map((app) => (
             <motion.button
               key={app.id}
