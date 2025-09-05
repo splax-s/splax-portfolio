@@ -44,7 +44,13 @@ COPY --from=builder --chown=1001:0 /opt/app-root/src/public ./public
 COPY --from=builder --chown=1001:0 /opt/app-root/src/.next/standalone ./
 COPY --from=builder --chown=1001:0 /opt/app-root/src/.next/static ./.next/static
 
+# OpenShift will run as a random user ID, so we need to make sure the files are accessible
+# Set group ownership and permissions for OpenShift compatibility
+RUN chmod -R g=u /opt/app-root/src && \
+    chmod -R g=u /opt/app-root/src/.next
+
 # Switch back to non-root user for OpenShift security
+# OpenShift will assign a random user ID, but we need to be in group 0
 USER 1001
 
 EXPOSE 8080
