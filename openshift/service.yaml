@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: portfolio
+  labels:
+    app: portfolio
+    app.kubernetes.io/component: portfolio
+    app.kubernetes.io/instance: portfolio
+    app.kubernetes.io/name: portfolio
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    deployment: portfolio
+  sessionAffinity: None
+  type: ClusterIP

@@ -1,0 +1,12 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: portfolio
+  labels:
+    app: portfolio
+    app.kubernetes.io/component: portfolio
+    app.kubernetes.io/instance: portfolio
+    app.kubernetes.io/name: portfolio
+spec:
+  lookupPolicy:
+    local: false

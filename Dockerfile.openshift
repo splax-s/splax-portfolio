@@ -1,0 +1,56 @@
+# OpenShift-compatible Dockerfile
+# Use the official Node.js runtime as a parent image
+FROM registry.access.redhat.com/ubi8/nodejs-20:latest AS base
+
+# Switch to root to install dependencies
+USER 0
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /opt/app-root/src
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Install all dependencies for building
+FROM base AS build-deps
+WORKDIR /opt/app-root/src
+COPY package.json package-lock.json* ./
+RUN npm ci && npm cache clean --force
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /opt/app-root/src
+COPY --from=build-deps --chown=1001:0 /opt/app-root/src/node_modules ./node_modules
+COPY --chown=1001:0 . .
+
+# Next.js collects completely anonymous telemetry data about general usage.
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /opt/app-root/src
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy public assets
+COPY --from=builder --chown=1001:0 /opt/app-root/src/public ./public
+
+# Automatically leverage output traces to reduce image size
+COPY --from=builder --chown=1001:0 /opt/app-root/src/.next/standalone ./
+COPY --from=builder --chown=1001:0 /opt/app-root/src/.next/static ./.next/static
+
+# Switch back to non-root user for OpenShift security
+USER 1001
+
+EXPOSE 8080
+
+ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
+
+# server.js is created by next build from the standalone output
+CMD ["node", "server.js"]

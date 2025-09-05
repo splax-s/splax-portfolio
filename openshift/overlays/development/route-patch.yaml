@@ -1,0 +1,6 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: portfolio
+spec:
+  host: portfolio-dev.apps.test.mtnn.cloud
